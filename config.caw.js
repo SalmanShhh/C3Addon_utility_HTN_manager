@@ -14,7 +14,7 @@ export const minConstructVersion = undefined;
 export const author = "SalmanShh";
 export const website = "https://www.construct.net";
 export const documentation = "https://www.construct.net";
-export const description = "Utility-driven HTN planning manager with scorer-based branch selection.";
+export const description = "Build smarter enemy and NPC AI with utility-driven HTN planning, alert reactions, and squad coordination, plus scalable time-sliced performance in addition to powerful behavior trees. This plugin provides a flexible framework for creating complex, data-driven AI behaviors in your games.";
 export const category = ADDON_CATEGORY.GENERAL;
 
 export const hasDomside = false;

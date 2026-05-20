@@ -1,9 +1,9 @@
 <img src="./src/icon.svg" width="100" /><br>
 # Utility-Driven HTN (Hierarchical Task Network) Manager
-<i>Utility-driven HTN planning manager with scorer-based branch selection.</i> <br>
-### Version 1.0.0.0
+<i>Build smarter enemy and NPC AI with utility-driven HTN planning, alert reactions, and squad coordination, plus scalable time-sliced performance in addition to powerful behavior trees. This plugin provides a flexible framework for creating complex, data-driven AI behaviors in your games.</i> <br>
+### Version 1.0.0.1
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases/download/salmanshh_DHTN_manager-1.0.0.0.c3addon/salmanshh_DHTN_manager-1.0.0.0.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases/download/salmanshh_DHTN_manager-1.0.0.1.c3addon/salmanshh_DHTN_manager-1.0.0.1.c3addon)
 <br>
 <sub> [See all releases](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases) </sub> <br>
 
@@ -172,6 +172,8 @@ npm run dev
 
 ---
 ## Changelog
+
+**1.0.0.1**
 
 **1.0.0.0**
 
