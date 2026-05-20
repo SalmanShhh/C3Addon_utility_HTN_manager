@@ -28,6 +28,8 @@ export default function (parentClass) {
       this.events = {};
       this._taskNetworks = new Map();
       this._utilityScorers = new Map();
+      this._taskNetworkBuilders = new Map();
+      this._utilityScorerBuilders = new Map();
       this._agents = new Map();
       this._agentOrder = [];
       this._globalState = {};
@@ -88,6 +90,7 @@ export default function (parentClass) {
     dispatch(tag) {
       if (this.events[tag]) {
         this.events[tag].forEach((event) => {
+          // Optional condition-gating lets script listeners mirror C3 trigger filters.
           if (event.options && event.options.params) {
             const fn = self.C3[AddonTypeMap[addonType]][id].Cnds[tag];
             if (fn && !fn.call(this, ...event.options.params)) {
@@ -217,6 +220,7 @@ export default function (parentClass) {
         return;
       }
 
+      // Supports full-pass updates and budgeted round-robin processing for frame stability.
       const processAll = this._maxAgentsPerTick <= 0 || this._maxAgentsPerTick >= total;
       const budget = processAll ? total : this._maxAgentsPerTick;
       const useTimeSlice = this._planningTimeSliceSec > 0;
@@ -235,6 +239,7 @@ export default function (parentClass) {
           this._planningCursor = 0;
         }
 
+        // Cursor state is preserved across ticks so no subset of agents is starved.
         const uid = this._agentOrder[this._planningCursor];
         this._planningCursor += 1;
         processed += 1;
@@ -520,6 +525,7 @@ export default function (parentClass) {
     }
 
     _loadSlotPositionsFromRaw(squadId, slotType, raw) {
+      // Accept both direct arrays and wrapped payloads ({ slots: [...] }) from data pipelines.
       const entries = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.slots)
@@ -572,6 +578,7 @@ export default function (parentClass) {
 
       let bestSlotId = "";
       let bestDistSq = Number.POSITIVE_INFINITY;
+      // Sorted iteration keeps tie behavior deterministic between runs.
       const sorted = [...points.entries()].sort((a, b) => a[0].localeCompare(b[0]));
       for (const [slotId, point] of sorted) {
         if (!this._isSlotFree(squad.id, type, slotId)) {
@@ -662,6 +669,7 @@ export default function (parentClass) {
       for (const [squadId, squad] of this._squads.entries()) {
         for (const [slotType, typeMap] of squad.slots.entries()) {
           for (const [slotId, slot] of typeMap.entries()) {
+            // Expired reservations emit the same trigger/context shape as manual release.
             if (slot.expiresAtSec <= now) {
               typeMap.delete(slotId);
               const assigned = this._agentAssignedSlots.get(slot.ownerUID);
@@ -1236,6 +1244,261 @@ export default function (parentClass) {
       return this._collectPrimitiveTaskIds(network)[Number(index)] ?? "";
     }
 
+    _beginTaskNetworkBuilder(agentType, rootTaskName) {
+      const typeKey = String(agentType ?? "").trim();
+      const root = String(rootTaskName ?? "").trim();
+      if (!typeKey || !root) {
+        return false;
+      }
+
+      this._taskNetworkBuilders.set(typeKey, {
+        root,
+        tasks: {},
+      });
+      return true;
+    }
+
+    _clearTaskNetworkBuilder(agentType) {
+      return this._taskNetworkBuilders.delete(String(agentType ?? "").trim());
+    }
+
+    _ensureTaskNetworkBuilder(agentType) {
+      return this._taskNetworkBuilders.get(String(agentType ?? "").trim()) ?? null;
+    }
+
+    _addBuilderCompoundTask(agentType, taskName) {
+      const builder = this._ensureTaskNetworkBuilder(agentType);
+      const taskKey = String(taskName ?? "").trim();
+      if (!builder || !taskKey) {
+        return false;
+      }
+
+      if (!builder.tasks[taskKey] || builder.tasks[taskKey].type !== "compound") {
+        builder.tasks[taskKey] = {
+          type: "compound",
+          methods: [],
+        };
+      }
+      return true;
+    }
+
+    _addBuilderPrimitiveTask(agentType, taskName, primitiveId) {
+      const builder = this._ensureTaskNetworkBuilder(agentType);
+      const taskKey = String(taskName ?? "").trim();
+      const primitive = String(primitiveId ?? "").trim();
+      if (!builder || !taskKey || !primitive) {
+        return false;
+      }
+
+      builder.tasks[taskKey] = {
+        type: "primitive",
+        id: primitive,
+      };
+      return true;
+    }
+
+    _findOrCreateBuilderMethod(agentType, taskName, methodId) {
+      const builder = this._ensureTaskNetworkBuilder(agentType);
+      const taskKey = String(taskName ?? "").trim();
+      const methodKey = String(methodId ?? "").trim();
+      if (!builder || !taskKey || !methodKey) {
+        return null;
+      }
+
+      if (!builder.tasks[taskKey]) {
+        builder.tasks[taskKey] = {
+          type: "compound",
+          methods: [],
+        };
+      }
+
+      const task = builder.tasks[taskKey];
+      if (task.type !== "compound") {
+        return null;
+      }
+
+      let method = task.methods.find((entry) => entry.id === methodKey);
+      if (!method) {
+        method = {
+          id: methodKey,
+          conditions: [],
+          subtasks: [],
+        };
+        task.methods.push(method);
+      }
+      return method;
+    }
+
+    _addBuilderMethod(agentType, taskName, methodId) {
+      return !!this._findOrCreateBuilderMethod(agentType, taskName, methodId);
+    }
+
+    _setBuilderMethodScorer(agentType, taskName, methodId, scorerId) {
+      const method = this._findOrCreateBuilderMethod(agentType, taskName, methodId);
+      const scorer = String(scorerId ?? "").trim();
+      if (!method || !scorer) {
+        return false;
+      }
+
+      method.utilityScorer = scorer;
+      return true;
+    }
+
+    _addBuilderMethodCondition(agentType, taskName, methodId, key, op, value) {
+      const method = this._findOrCreateBuilderMethod(agentType, taskName, methodId);
+      const stateKey = String(key ?? "").trim();
+      const operation = String(op ?? "eq").trim();
+      if (!method || !stateKey) {
+        return false;
+      }
+
+      const validOps = new Set(["eq", "neq", "gt", "gte", "lt", "lte"]);
+      method.conditions.push({
+        key: stateKey,
+        op: validOps.has(operation) ? operation : "eq",
+        value,
+      });
+      return true;
+    }
+
+    _addBuilderMethodSubtask(agentType, taskName, methodId, subtaskTaskName) {
+      const method = this._findOrCreateBuilderMethod(agentType, taskName, methodId);
+      const subtask = String(subtaskTaskName ?? "").trim();
+      if (!method || !subtask) {
+        return false;
+      }
+
+      method.subtasks.push(subtask);
+      return true;
+    }
+
+    _registerBuiltTaskNetwork(agentType) {
+      const typeKey = String(agentType ?? "").trim();
+      const builder = this._taskNetworkBuilders.get(typeKey);
+      if (!builder || !builder.root) {
+        return false;
+      }
+
+      // Builder drafts are normalized into the runtime HTN shape consumed by decomposition.
+      const tasks = {};
+      for (const [name, task] of Object.entries(builder.tasks)) {
+        if (task.type === "primitive") {
+          if (!task.id) {
+            continue;
+          }
+          tasks[name] = {
+            type: "primitive",
+            id: task.id,
+          };
+          continue;
+        }
+
+        const methods = Array.isArray(task.methods)
+          ? task.methods
+              .map((method) => {
+                // Methods with no subtasks are ignored to prevent dead-end branches.
+                const subtasks = Array.isArray(method.subtasks)
+                  ? method.subtasks.filter((entry) => String(entry ?? "").trim())
+                  : [];
+                if (!subtasks.length) {
+                  return null;
+                }
+
+                const result = {
+                  subtasks,
+                };
+
+                if (Array.isArray(method.conditions) && method.conditions.length) {
+                  result.conditions = method.conditions;
+                }
+                if (method.utilityScorer) {
+                  result.utilityScorer = method.utilityScorer;
+                }
+                return result;
+              })
+              .filter(Boolean)
+          : [];
+
+        tasks[name] = {
+          type: "compound",
+          methods,
+        };
+      }
+
+      if (!tasks[builder.root]) {
+        return false;
+      }
+
+      this._taskNetworks.set(typeKey, {
+        root: builder.root,
+        tasks,
+      });
+      this._lastRegisteredAgentType = typeKey;
+      this._trigger("OnTaskNetworkRegistered");
+      return true;
+    }
+
+    _beginUtilityScorerBuilder(scorerId, aggregation = "weighted_sum") {
+      const idKey = String(scorerId ?? "").trim();
+      if (!idKey) {
+        return false;
+      }
+
+      const agg = String(aggregation ?? "weighted_sum").trim();
+      this._utilityScorerBuilders.set(idKey, {
+        id: idKey,
+        aggregation: agg === "minimum" ? "minimum" : "weighted_sum",
+        inputs: [],
+      });
+      return true;
+    }
+
+    _clearUtilityScorerBuilder(scorerId) {
+      return this._utilityScorerBuilders.delete(String(scorerId ?? "").trim());
+    }
+
+    _addUtilityScorerInput(
+      scorerId,
+      worldStateKey,
+      weight = 1,
+      invert = 0,
+      x1 = 0,
+      y1 = 0,
+      x2 = 1,
+      y2 = 1
+    ) {
+      const builder = this._utilityScorerBuilders.get(String(scorerId ?? "").trim());
+      const key = String(worldStateKey ?? "").trim();
+      if (!builder || !key) {
+        return false;
+      }
+
+      builder.inputs.push({
+        worldStateKey: key,
+        weight: Number(weight ?? 1),
+        invert: !!Number(invert ?? 0),
+        curve: [
+          [Number(x1 ?? 0), Number(y1 ?? 0)],
+          [Number(x2 ?? 1), Number(y2 ?? 1)],
+        ],
+      });
+      return true;
+    }
+
+    _registerBuiltUtilityScorer(scorerId) {
+      const builder = this._utilityScorerBuilders.get(String(scorerId ?? "").trim());
+      if (!builder || !builder.id) {
+        return false;
+      }
+
+      this._utilityScorers.set(builder.id, {
+        id: builder.id,
+        aggregation: builder.aggregation,
+        inputs: builder.inputs.slice(),
+      });
+      return true;
+    }
+
     _registerTaskNetwork(agentType, networkJson) {
       const parsed = this._parseJson(networkJson);
       if (!parsed) {
@@ -1399,6 +1662,7 @@ export default function (parentClass) {
 
     _decomposeTask(agent, taskName, depth) {
       if (depth > this._maxPlanDepth) {
+        // Guards against runaway recursion from malformed/cyclic authored data.
         return null;
       }
 
@@ -1423,6 +1687,7 @@ export default function (parentClass) {
 
       const methods = this._rankMethods(validMethods, combined);
       for (const method of methods) {
+        // Branch expansion is depth-first: any invalid child rejects the whole method branch.
         const branch = [];
         let validBranch = true;
 
@@ -1467,16 +1732,22 @@ export default function (parentClass) {
         const right = condition.value;
         switch (condition.op) {
           case "eq":
+          case "==":
             return Number(left) === Number(right);
           case "neq":
+          case "!=":
             return Number(left) !== Number(right);
           case "gt":
+          case ">":
             return Number(left) > Number(right);
           case "gte":
+          case ">=":
             return Number(left) >= Number(right);
           case "lt":
+          case "<":
             return Number(left) < Number(right);
           case "lte":
+          case "<=":
             return Number(left) <= Number(right);
           default:
             return false;
@@ -1498,6 +1769,7 @@ export default function (parentClass) {
         const rawValue = Number(combinedState[String(input.worldStateKey)] ?? 0);
         const curveValue = this._evaluateCurve(input.curve ?? [], rawValue);
         const finalValue = input.invert ? 1 - curveValue : curveValue;
+        // Clamp each weighted input so bad data cannot produce out-of-range totals.
         return Math.max(0, Math.min(1, finalValue * Number(input.weight ?? 1)));
       });
 
@@ -1510,6 +1782,7 @@ export default function (parentClass) {
     }
 
     _evaluateCurve(curve, value) {
+      // Piecewise-linear interpolation over sorted points tolerates unordered author input.
       const points = (curve ?? [])
         .map((point) => [Number(point[0]), Number(point[1])])
         .sort((left, right) => left[0] - right[0]);
@@ -1526,6 +1799,7 @@ export default function (parentClass) {
         const [x1, y1] = points[index];
         const [x2, y2] = points[index + 1];
         if (value >= x1 && value <= x2) {
+          // Linear interpolation inside the matched segment.
           const ratio = x2 === x1 ? 0 : (value - x1) / (x2 - x1);
           return y1 + (y2 - y1) * ratio;
         }

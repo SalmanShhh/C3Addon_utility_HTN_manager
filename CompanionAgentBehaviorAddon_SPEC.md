@@ -15,6 +15,12 @@ This file defines the integration contract for the Utility-Driven HTN Agent beha
 - Registration behavior: auto-register on create when Auto Register property is true
 - Deregistration behavior: unregisters on destroy, with optional coordination slot cleanup
 
+Manager setup guidance:
+- Behavior addon provides slot and task network builders for recommended team workflow
+- Manager addon provides Builder category actions for direct scripting when needed
+- Both paths are valid; use behavior builders for reusable content libraries, manager builders for immediate setup
+- See Guide.md Section 9C for content creation examples and workflow
+
 ## 3. Architecture Summary
 The behavior does not own HTN decomposition or utility scoring. It owns per-instance orchestration:
 - manager registration lifecycle
@@ -43,10 +49,15 @@ Each behavior instance tracks:
 ## 5. Planning Lifecycle Contract
 1. Behavior registers itself with manager (optional auto flow).
 2. Behavior feeds context via world-state keys and signals.
-3. Behavior requests plan immediately or on interval according to planning mode.
-4. Behavior polls manager active task and emits task triggers.
-5. Gameplay layer executes primitive behavior externally.
-6. Gameplay layer calls Mark Task Complete or Mark Task Failed.
+3. Behavior can build and export task networks using task network builder ACEs (recommended for team projects):
+   - InitializeTaskNetworkBuilder(networkId)
+   - AddTaskToNetworkBuilder(taskId, networkId, description, taskType)
+   - LoadTaskNetworkFromBuilder(networkId, exportKey)
+   - Exported JSON can be saved to project library and registered with manager
+4. Behavior requests plan immediately or on interval according to planning mode.
+5. Behavior polls manager active task and emits task triggers.
+6. Gameplay layer executes primitive behavior externally.
+7. Gameplay layer calls Mark Task Complete or Mark Task Failed.
 
 ## 6. World-State Contract
 Write helpers:
@@ -92,7 +103,15 @@ Shared coordination storage supports:
 - nearest-slot auto assignment
 - grouped squad plan invalidation/request flow
 
-Core actions:
+Slot setup methods (two paths):
+- **Traditional path**: SetSlotPosition actions to define slots individually
+- **Recommended path (Slot Builders)**: Compose declaratively without JSON syntax errors:
+  - InitializeSlotBuilder(squadId, slotType)
+  - AddSlotToBuilder(squadId, slotType, slotId, x, y)
+  - LoadSlotSetFromBuilder(squadId, slotType)
+  - Exported JSON can be saved to project library and imported later
+
+Core coordination actions:
 - AssignAgentToSquad(agentUID, squadId)
 - RemoveAgentFromSquad(agentUID)
 - SetSquadLeader(squadId, agentUID)
@@ -140,7 +159,19 @@ Compatibility guidance:
 ## 11. Scripting API Surface
 Single source of script API is ACE exposure on actions, conditions, and expressions.
 
-Write/control examples:
+**Content Builder methods** (recommended for team/large projects):
+
+Slot builder ACEs:
+- InitializeSlotBuilder(squadId, slotType)
+- AddSlotToBuilder(squadId, slotType, slotId, x, y)
+- LoadSlotSetFromBuilder(squadId, slotType)
+
+Task network builder ACEs:
+- InitializeTaskNetworkBuilder(networkId)
+- AddTaskToNetworkBuilder(taskId, networkId, description, taskType)
+- LoadTaskNetworkFromBuilder(networkId, exportKey)
+
+**Write/control examples**:
 - SetEnabled(enabled)
 - SetAgentType(agentType)
 - SetPlanningMode(mode)
@@ -152,7 +183,7 @@ Write/control examples:
 - AssignAgentToSquad(agentUID, squadId)
 - ReserveSlot(squadId, slotType, slotId, agentUID, ttlSec)
 
-Read/query examples:
+**Read/query examples**:
 - CurrentTask()
 - PreviousTask()
 - AlertLevel()
@@ -164,7 +195,7 @@ Read/query examples:
 - PlanTaskAtIndex(index)
 - SquadMemberCount(squadId)
 
-Event helpers:
+**Event helpers**:
 - on(tag, callback, options)
 - off(tag, callback)
 - dispatch(tag)
@@ -172,6 +203,7 @@ Event helpers:
 Notes:
 - Combo parameters should use combo key strings in script calls.
 - Underscore-prefixed methods are internal and unstable.
+- **Recommended approach**: Use slot/task network builders to compose content declaratively, export to JSON, and store in project libraries for team reuse.
 
 ## 12. Trigger/Event Contract
 Primary triggers exposed by the behavior:
@@ -198,7 +230,106 @@ Manager companion addon should:
 - execute concrete movement/combat/animation outside this behavior
 - call completion/failure actions promptly to prevent task stalls
 
-## 14. Integration Pattern Example
+**Task Network Setup Options:**
+1. **Recommended (Behavior-driven)**: Use behavior addon task network builders to compose networks declaratively:
+   - Call InitializeTaskNetworkBuilder, AddTaskToNetworkBuilder, LoadTaskNetworkFromBuilder on behavior
+   - Export JSON from world-state keys after loading
+   - Save JSON to project `assets/ai_content/networks/` for team sharing and version control
+   - Register exported JSON with manager at runtime
+   
+2. **Alternative (Manager-direct)**: Use manager actions in the `Builder` category:
+   - `Builder: Begin Utility Scorer`
+   - `Builder: Add Utility Input (Linear)`
+   - `Builder: Register Utility Scorer`
+   - `Builder: Begin Task Network`
+   - `Builder: Add Compound Task`
+   - `Builder: Add Primitive Task`
+   - `Builder: Add Method`
+   - `Builder: Add Method Condition`
+   - `Builder: Add Method Subtask`
+   - `Builder: Set Method Utility Scorer`
+   - `Builder: Register Task Network`
+
+3. **Slot Setup Options:**
+   - **Recommended**: Use behavior slot builder ACEs (InitializeSlotBuilder → AddSlotToBuilder → LoadSlotSetFromBuilder)
+   - **Alternative**: Use manager slot setup actions or behavior SetSlotPosition actions
+
+See Guide.md Section 9C for comprehensive content creation and export examples.
+
+## 14. Integration Pattern Examples
+
+### Pattern A: Behavior Builders (Recommended for team projects)
+```javascript
+function wireEnemyWithBuilders(runtime, enemy) {
+  const ai = enemy.behaviors.UtilityDrivenHTNAgent;
+  const manager = runtime.objects.Manager.getFirstInstance();
+
+  // Setup behavior basics
+  ai.SetEnabled(true);
+  ai.SetAgentType("guard");
+  ai.SetPlanningMode("hybrid");
+  ai.SetPlanningInterval(0.75);
+
+  // Build task network using behavior builders
+  ai.InitializeTaskNetworkBuilder("guard");
+  ai.AddTaskToNetworkBuilder("idle", "guard", "Stand and wait", "primitive");
+  ai.AddTaskToNetworkBuilder("patrol", "guard", "Walk patrol route", "primitive");
+  ai.AddTaskToNetworkBuilder("chase", "guard", "Pursue target", "primitive");
+  ai.LoadTaskNetworkFromBuilder("guard", "guardNetworkJSON");
+
+  // Export and register with manager
+  const networkJSON = ai.WorldState("guardNetworkJSON");
+  manager.RegisterTaskNetwork("guard", networkJSON);
+
+  // Build slot formation using behavior builders
+  ai.InitializeSlotBuilder("guard_squad", "formation");
+  ai.AddSlotToBuilder("guard_squad", "formation", "point", 0, 0);
+  ai.AddSlotToBuilder("guard_squad", "formation", "left_flank", -150, 100);
+  ai.AddSlotToBuilder("guard_squad", "formation", "right_flank", 150, 100);
+  ai.LoadSlotSetFromBuilder("guard_squad", "formation");
+
+  // Setup task execution
+  ai.on("OnTaskStarted", () => {
+    const task = ai.CurrentTask();
+    if (task === "patrol") {
+      enemy.instVars.Speed = 120;
+    }
+    if (task === "chase") {
+      enemy.instVars.Speed = 220;
+    }
+  });
+
+  ai.on("OnStimulusReceived", () => {
+    if (ai.StimulusType() === "audio") {
+      ai.RequestReplan();
+    }
+  });
+}
+```
+
+### Pattern B: Manager Direct Builders (For immediate scripting)
+```javascript
+function setupManagerNetworksDirectly(runtime) {
+  const manager = runtime.objects.Manager.getFirstInstance();
+
+  // Setup utility scorers directly on manager
+  manager.BeginUtilityScorer("guard_combat", "weighted_sum");
+  manager.AddUtilityInputLinear("guard_combat", "targetVisible", 1, "0", 0, 0, 1, 1);
+  manager.RegisterUtilityScorer("guard_combat");
+
+  // Setup networks directly on manager
+  manager.BeginTaskNetwork("guard", "guard_root");
+  manager.AddCompoundTask("guard", "guard_root");
+  manager.AddPrimitiveTask("guard", "chase_target", "chase");
+  manager.AddMethod("guard", "guard_root", "m_chase");
+  manager.AddMethodCondition("guard", "guard_root", "m_chase", "targetVisible", "eq", 1);
+  manager.SetMethodUtilityScorer("guard", "guard_root", "m_chase", "guard_combat");
+  manager.AddMethodSubtask("guard", "guard_root", "m_chase", "chase_target");
+  manager.RegisterTaskNetwork("guard");
+}
+```
+
+### Pattern C: Runtime Task Dispatch
 ```javascript
 function wireEnemy(runtime, enemy) {
   const ai = enemy.behaviors.UtilityDrivenHTNAgent;

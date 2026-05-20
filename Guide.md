@@ -1,6 +1,6 @@
 # Utility-Driven HTN (Hierarchical Task Network) Manager Guide
 
-This addon is a headless AI decision manager for Construct 3 that combines **HTN planning**, **utility scoring**, and optional **cross-agent coordination** so you can build reactive enemies and NPCs without writing giant event-sheet state machines. It solves the common scaling problem where AI logic becomes hard to maintain as projects grow, and it gives you a data-first pipeline where behaviors come from JSON, world state, and reusable action/condition/expression calls.
+This addon is a headless AI decision manager for Construct 3 that combines **HTN planning**, **utility scoring**, and optional **cross-agent coordination** so you can build reactive enemies and NPCs without writing giant event-sheet state machines. It solves the common scaling problem where AI logic becomes hard to maintain as projects grow, and it gives you a data-first pipeline where behaviors come from builder ACEs, world state, and reusable action/condition/expression calls.
 
 ## Table of Contents
 1. [Scenarios Where This Addon Excels](#1-scenarios-where-this-addon-excels)
@@ -44,14 +44,14 @@ Without a manager, AI often becomes a web of booleans, timers, and branches spre
 ### Key design decisions
 - **Headless architecture:** The addon decides tasks. You perform movement, animation, VFX, and gameplay effects in event sheets.
 - **World-state ownership by game logic:** You control state values and feed them into the planner.
-- **Data-first planning:** Task networks and utility scorers are registered from JSON.
+- **Data-first planning:** Task networks and utility scorers are registered from builder ACEs (or JSON when needed).
 - **Single global manager:** One plugin instance manages all registered agents.
 - **Optional coordination layer:** Squad and slot systems are additive and do not break single-agent setups.
 
 ### Key concepts at a glance
 | Concept | Meaning |
 | --- | --- |
-| **Task network** | JSON tree of compound and primitive tasks for one archetype. |
+| **Task network** | Data model of compound and primitive tasks for one archetype. |
 | **Utility scorer** | Weighted curve set that outputs a score used for branch ranking. |
 | **World state** | Per-agent and global key-value input used by conditions and scorers. |
 | **Plan** | Ordered primitive task list produced by decomposition. |
@@ -61,17 +61,23 @@ Without a manager, AI often becomes a web of booleans, timers, and branches spre
 
 ## 3. Project Setup
 1. Add the plugin object to your project.
-2. At layout start, register task networks and utility scorers.
+2. At layout start, build and register task networks and utility scorers.
 3. For each NPC, register world-state values and request plans.
 4. On task triggers, perform gameplay actions.
 
 Event sheet example:
 ```text
 Event: On start of layout
-  Action: Setup: Register Task Network -> "guard", GuardNetworkJson
-  Action: Setup: Register Utility Scorer -> GuardCombatScorerJson
-  Action: Setup: Register Utility Scorer -> GuardRetreatScorerJson
-  // Register data before first plan request
+  Action: Builder: Begin Utility Scorer -> "GuardCombat", Weighted sum
+  Action: Builder: Add Utility Input (Linear) -> "GuardCombat", "targetVisible", 1, No, 0,0,1,1
+  Action: Builder: Register Utility Scorer -> "GuardCombat"
+  Action: Builder: Begin Task Network -> "guard", "Root"
+  Action: Builder: Add Compound Task -> "guard", "Root"
+  Action: Builder: Add Primitive Task -> "guard", "PatrolTask", "patrol"
+  Action: Builder: Add Method -> "guard", "Root", "m_patrol"
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_patrol", "PatrolTask"
+  Action: Builder: Register Task Network -> "guard"
+  // Build once, then register before first plan request
 
 Event: Every tick
   Action: Setup: Set World State Key -> GuardUID, "targetVisible", TargetVisible
@@ -101,7 +107,7 @@ Event: Triggers: On Primitive Task Started
 | Alert tier 3 | Number | 0.8 | Threshold for combat tier. |
 
 ## 5. Setup and Registration
-This feature group handles data loading and state writes.
+This feature group handles builder-driven data authoring, registration, and state writes.
 
 Use it when:
 - Initializing archetypes.
@@ -111,9 +117,16 @@ Use it when:
 Event sheet example:
 ```text
 Event: On start of layout
-  Action: Setup: Register Task Network -> "drone", DroneNetworkJson
-  Action: Setup: Register Utility Scorer -> DroneSearchScorerJson
-  // Register once per archetype
+  Action: Builder: Begin Utility Scorer -> "DroneSearch", Weighted sum
+  Action: Builder: Add Utility Input (Linear) -> "DroneSearch", "targetVisible", 1, No, 0,0,1,1
+  Action: Builder: Register Utility Scorer -> "DroneSearch"
+  Action: Builder: Begin Task Network -> "drone", "Root"
+  Action: Builder: Add Compound Task -> "drone", "Root"
+  Action: Builder: Add Primitive Task -> "drone", "SearchTask", "search"
+  Action: Builder: Add Method -> "drone", "Root", "m_search"
+  Action: Builder: Add Method Subtask -> "drone", "Root", "m_search", "SearchTask"
+  Action: Builder: Register Task Network -> "drone"
+  // Register once per archetype with no raw JSON required
 
 Event: Every tick
   Action: Setup: Set Global State Key -> "alarmActive", AlarmFlag
@@ -124,6 +137,145 @@ Event: Every tick
 Gotchas:
 - Register all required scorer IDs before relying on utility-ranked methods.
 - Keep key naming consistent across network conditions and world-state writes.
+
+### 5.1 Builder ACEs (No JSON in Event Sheets)
+Use this flow when you want designers or event-sheet users to author AI directly in Construct.
+
+Recommended order:
+1. Begin scorer draft.
+2. Add one or more utility inputs.
+3. Register scorer.
+4. Begin task-network draft.
+5. Add compound and primitive tasks.
+6. Add methods per compound task.
+7. Add method conditions and subtasks.
+8. Optionally assign method utility scorer IDs.
+9. Register task network.
+
+Builder ACE quick reference:
+- `Builder: Begin Task Network`
+- `Builder: Add Compound Task`
+- `Builder: Add Primitive Task`
+- `Builder: Add Method`
+- `Builder: Add Method Condition`
+- `Builder: Add Method Subtask`
+- `Builder: Set Method Utility Scorer`
+- `Builder: Register Task Network`
+- `Builder: Begin Utility Scorer`
+- `Builder: Add Utility Input (Linear)`
+- `Builder: Register Utility Scorer`
+
+### 5.2 Builder Use Cases and Pseudo-Event Recipes
+All examples below are event-sheet friendly and avoid raw JSON strings.
+
+1. Basic patrol fallback (single method)
+```text
+Event: On start of layout
+  Action: Builder: Begin Task Network -> "guard", "Root"
+  Action: Builder: Add Compound Task -> "guard", "Root"
+  Action: Builder: Add Primitive Task -> "guard", "PatrolTask", "patrol"
+  Action: Builder: Add Method -> "guard", "Root", "m_patrol"
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_patrol", "PatrolTask"
+  Action: Builder: Register Task Network -> "guard"
+```
+
+2. Combat branch with visibility gate
+```text
+Event: On start of layout
+  Action: Builder: Add Primitive Task -> "guard", "ChaseTask", "chase"
+  Action: Builder: Add Method -> "guard", "Root", "m_chase"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_chase", "targetVisible", ==, 1
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_chase", "ChaseTask"
+```
+
+3. Investigate-noise branch before patrol
+```text
+Event: On start of layout
+  Action: Builder: Add Primitive Task -> "guard", "InvestigateTask", "investigate"
+  Action: Builder: Add Method -> "guard", "Root", "m_investigate"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_investigate", "heardNoise", ==, 1
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_investigate", "InvestigateTask"
+```
+
+4. Health-based retreat branch
+```text
+Event: On start of layout
+  Action: Builder: Add Primitive Task -> "guard", "RetreatTask", "retreat"
+  Action: Builder: Add Method -> "guard", "Root", "m_retreat"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_retreat", "health", <, 25
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_retreat", "RetreatTask"
+```
+
+5. Multi-step branch (take cover then shoot)
+```text
+Event: On start of layout
+  Action: Builder: Add Primitive Task -> "guard", "TakeCoverTask", "take_cover"
+  Action: Builder: Add Primitive Task -> "guard", "ShootTask", "shoot"
+  Action: Builder: Add Method -> "guard", "Root", "m_cover_then_shoot"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_cover_then_shoot", "targetVisible", ==, 1
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_cover_then_shoot", "TakeCoverTask"
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_cover_then_shoot", "ShootTask"
+```
+
+6. Utility scorer for aggression from distance
+```text
+Event: On start of layout
+  Action: Builder: Begin Utility Scorer -> "AggroByDistance", Weighted sum
+  Action: Builder: Add Utility Input (Linear) -> "AggroByDistance", "distanceToTarget", 1, Yes, 0,1,800,0
+  Action: Builder: Register Utility Scorer -> "AggroByDistance"
+```
+
+7. Utility scorer for fear from low health
+```text
+Event: On start of layout
+  Action: Builder: Begin Utility Scorer -> "FearByHealth", Weighted sum
+  Action: Builder: Add Utility Input (Linear) -> "FearByHealth", "health", 1, Yes, 0,0,100,1
+  Action: Builder: Register Utility Scorer -> "FearByHealth"
+```
+
+8. Utility-ranked method selection
+```text
+Event: On start of layout
+  Action: Builder: Set Method Utility Scorer -> "guard", "Root", "m_chase", "AggroByDistance"
+  Action: Builder: Set Method Utility Scorer -> "guard", "Root", "m_retreat", "FearByHealth"
+  Action: Builder: Register Task Network -> "guard"
+```
+
+9. Alert-tier gated behavior
+```text
+Event: On start of layout
+  Action: Builder: Add Method -> "guard", "Root", "m_full_alert"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_full_alert", "alertTier", >=, 2
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_full_alert", "ChaseTask"
+```
+
+10. Day/night schedule split
+```text
+Event: On start of layout
+  Action: Builder: Add Primitive Task -> "guard", "SleepTask", "sleep"
+  Action: Builder: Add Method -> "guard", "Root", "m_sleep"
+  Action: Builder: Add Method Condition -> "guard", "Root", "m_sleep", "isNight", ==, 1
+  Action: Builder: Add Method Subtask -> "guard", "Root", "m_sleep", "SleepTask"
+```
+
+11. Archetype reuse with minor variation
+```text
+Event: On start of layout
+  Action: Builder: Begin Task Network -> "elite_guard", "Root"
+  Action: Repeat same task graph pattern as "guard"
+  Action: Builder: Set Method Utility Scorer -> "elite_guard", "Root", "m_chase", "AggroByDistance"
+  Action: Builder: Register Task Network -> "elite_guard"
+```
+
+12. Safe rebuild during iteration
+```text
+Event: Keyboard On R pressed
+  Action: Builder: Clear Task Network Draft -> "guard"
+  Action: Builder: Begin Task Network -> "guard", "Root"
+  Action: Recreate tasks and methods
+  Action: Builder: Register Task Network -> "guard"
+  // Lets you iterate quickly without editing external JSON assets
+```
 
 ## 6. Planning and Execution Control
 This feature group controls when and how plans are generated and consumed.
@@ -225,19 +377,129 @@ Gotchas:
 For projects with 100+ unique NPCs, avoid one-network-per-instance. Use **archetypes**, **variant seeds**, and **shared templates**.
 
 Recommended pipeline:
-1. Define 5-20 core archetype networks (guard, sniper, brute, scout).
+1. Define 5-20 core archetype task-network blueprints (guard, sniper, brute, scout).
 2. Define utility scorer libraries per combat style.
-3. Generate per-instance variants through world-state seeds.
-4. Keep one naming convention for keys and methods.
-5. Use data packs or tables to batch register content.
+3. Build and register those blueprints through `Builder` ACE actions at startup.
+4. Generate per-instance variants through world-state seeds.
+5. Keep one naming convention for keys, methods, scorer IDs, and primitive task IDs.
+
+### Builder-first scaling model
+For small projects, hand-building one archetype in event sheets is fine.
+For large projects, treat Builder ACEs as a **content compiler pipeline**:
+
+1. Author archetype data in tables/JSON/config (outside the manager runtime format).
+2. Convert each row into Builder ACE calls during bootstrap.
+3. Register finalized scorers first, then task networks.
+4. Validate with query expressions (`CountRegisteredNetworks`, `CountRegisteredScorers`, `CountRegisteredTasks`).
+5. Spawn/enable agents only after validation passes.
+
+This keeps your live AI format stable while letting designers edit high-level content safely.
+
+### Why Builder ACEs scale better than raw network JSON in event sheets
+- Better diffability: one action change is easier to review than long JSON strings.
+- Better reuse: shared blocks ("add combat branch", "add retreat branch") can be reused across archetypes.
+- Better onboarding: designers can read `Builder: Add Method Condition` directly in Event Sheet UI.
+- Better migration: adding a new condition key or scorer can be scripted as a build step.
+
+### Large-project bootstrap architecture
+Split startup into phases:
+
+1. `Phase A`: Register scorer library.
+2. `Phase B`: Register archetype task networks.
+3. `Phase C`: Register companion agents and assign `agentType`.
+4. `Phase D`: Begin runtime world-state updates.
+
+If one phase fails validation, halt later phases and report debug output.
 
 Large-project event sheet example:
-```text
-Event: On content bootstrap
+
+Large-project event sheet example:
+  // Phase A: scorer library
+  Action: For each ScorerRow in ScorerTable
+    Action: Builder: Begin Utility Scorer -> ScorerRow.Id, ScorerRow.Aggregation
+    Action: For each InputRow where InputRow.ScorerId = ScorerRow.Id
+      Action: Builder: Add Utility Input (Linear) ->
+              ScorerRow.Id,
+              InputRow.WorldStateKey,
+              InputRow.Weight,
+              InputRow.Invert,
+              InputRow.X1, InputRow.Y1, InputRow.X2, InputRow.Y2
+    Action: Builder: Register Utility Scorer -> ScorerRow.Id
+
+  // Phase B: archetype networks
   Action: For each Archetype in ArchetypeTable
-    Action: Setup: Register Task Network -> Archetype.Id, Archetype.NetworkJson
-  Action: For each Scorer in ScorerTable
+    Action: Builder: Begin Task Network -> Archetype.Id, Archetype.RootTask
+
+    Action: For each TaskRow where TaskRow.ArchetypeId = Archetype.Id and TaskRow.Type = "compound"
+      Action: Builder: Add Compound Task -> Archetype.Id, TaskRow.TaskName
+
+    Action: For each TaskRow where TaskRow.ArchetypeId = Archetype.Id and TaskRow.Type = "primitive"
+      Action: Builder: Add Primitive Task -> Archetype.Id, TaskRow.TaskName, TaskRow.PrimitiveId
+
+    Action: For each MethodRow where MethodRow.ArchetypeId = Archetype.Id
+      Action: Builder: Add Method -> Archetype.Id, MethodRow.TaskName, MethodRow.MethodId
+      Action: For each ConditionRow where ConditionRow.MethodKey = MethodRow.Key
+        Action: Builder: Add Method Condition ->
+                Archetype.Id,
+                MethodRow.TaskName,
+                MethodRow.MethodId,
+                ConditionRow.Key,
+                ConditionRow.Op,
+                ConditionRow.Value
+      Action: For each SubtaskRow where SubtaskRow.MethodKey = MethodRow.Key
+        Action: Builder: Add Method Subtask ->
+                Archetype.Id,
+                MethodRow.TaskName,
+                MethodRow.MethodId,
+                SubtaskRow.SubtaskTaskName
+      Action: If MethodRow.UtilityScorerId != ""
+        Action: Builder: Set Method Utility Scorer ->
+                Archetype.Id,
+                MethodRow.TaskName,
+                MethodRow.MethodId,
+                MethodRow.UtilityScorerId
+
+    Action: Builder: Register Task Network -> Archetype.Id
+
+  // Phase C: sanity checks
+  Action: Debug: Dump Agent State -> FirstAgentUID (optional)
+  // Batch build keeps startup predictable and reviewable
     Action: Setup: Register Utility Scorer -> Scorer.Json
+
+### Extension patterns for bigger projects
+1. Archetype inheritance by convention
+- Create base rows (for example `guard_base`) and append variant rows (`guard_elite`, `guard_night`).
+- Reuse task names and only override method conditions/scorers where needed.
+
+2. Role modules
+- Keep method bundles in separate tables: `CombatModule`, `RetreatModule`, `InvestigateModule`.
+- During build, include modules per archetype to avoid copy-paste branches.
+
+3. Live hot-reload in dev builds
+- Bind a debug hotkey to clear/rebuild one archetype draft:
+  - `Builder: Clear Task Network Draft`
+  - `Builder: Begin Task Network`
+  - Reapply that archetype's rows
+  - `Builder: Register Task Network`
+
+4. Versioned content keys
+- Namespace keys to avoid collisions in very large teams:
+  - `combat.targetVisible`
+  - `navigation.coverAvailable`
+  - `seed.riskTolerance`
+
+5. Validation gates
+- After each archetype register, check expected primitive count:
+  - `Queries.CountRegisteredTasks(archetypeId)`
+- Fail fast when counts mismatch expected data-table values.
+
+### Practical scaling checklist
+- Keep primitive IDs stable across updates and save/load revisions.
+- Register scorer IDs before any method references them.
+- Use consistent method ID naming (`m_verb_context`).
+- Keep builder phases deterministic (same order every boot).
+- Centralize world-state key constants to avoid typo drift.
+- Reserve immediate `Planning: Request Plan` for urgent events; use invalidate for bulk updates.
   // Batch registration keeps startup predictable
 ```
 
@@ -971,18 +1233,42 @@ Primary integration split:
 ### Recommended setup order
 1. Add one instance of the manager plugin to the project.
 2. Add the companion behavior to each AI-controlled object.
-3. Register all required task networks and utility scorers at startup.
+3. Choose your content-authoring path (behavior-driven builders or manager-direct builders).
+4. Register all required task networks and utility scorers at startup.
 4. Ensure each agent behavior has an agentType that maps to a registered manager network.
 5. Feed world-state keys continuously from gameplay context.
 6. Execute gameplay behavior when task triggers fire.
 7. Mark task complete or failed from gameplay outcome.
 
-### Event-sheet integration pattern
+### Content authoring paths
+Use whichever path matches your team workflow.
+
+Path A: behavior-driven builders (recommended for shared content libraries)
+- Build task network JSON through behavior builder actions.
+- Build slot sets through behavior slot-builder actions.
+- Export to keys/assets and reuse across levels or projects.
+- Register exported JSON with manager at runtime.
+
+Path B: manager-direct builders (recommended for immediate setup and rapid iteration)
+- Build utility scorers directly with manager `Builder:` actions.
+- Build task networks directly with manager `Builder:` actions.
+- Register immediately without separate JSON assets.
+
+Both paths are valid and compatible with the same runtime plan/task flow.
+
+### Event-sheet integration pattern (behavior-driven content path)
 ```text
 Event: On start of layout
-  Action: Manager.Setup Register Task Network -> "guard", GuardNetworkJson
-  Action: Manager.Setup Register Utility Scorer -> GuardCombatScorerJson
-  Action: Manager.Setup Register Utility Scorer -> GuardRetreatScorerJson
+  // Behavior builds network content and exports JSON to a world-state key
+  Action: AgentBehavior.InitializeTaskNetworkBuilder -> "guard"
+  Action: AgentBehavior.AddTaskToNetworkBuilder -> "patrol", "guard", "Patrol route", "primitive"
+  Action: AgentBehavior.AddTaskToNetworkBuilder -> "chase", "guard", "Pursue target", "primitive"
+  Action: AgentBehavior.LoadTaskNetworkFromBuilder -> "guard", "guardNetworkJSON"
+
+  // Manager registers exported JSON
+  Action: Setup: Register Task Network -> "guard", AgentBehavior.WorldState("guardNetworkJSON")
+  Action: Setup: Register Utility Scorer -> GuardCombatScorerJson
+  Action: Setup: Register Utility Scorer -> GuardRetreatScorerJson
 
 Event: Every tick (for each enemy)
   Action: AgentBehavior.SetWorldState -> "targetVisible", TargetVisible
@@ -995,6 +1281,23 @@ Event: AgentBehavior.OnTaskStarted
 
 Event: Enemy reached target
   Action: AgentBehavior.MarkTaskComplete
+```
+
+### Event-sheet integration pattern (manager-direct builder path)
+```text
+Event: On start of layout
+  Action: Builder: Begin Utility Scorer -> "guard_combat", Weighted sum
+  Action: Builder: Add Utility Input (Linear) -> "guard_combat", "targetVisible", 1, No, 0,0,1,1
+  Action: Builder: Register Utility Scorer -> "guard_combat"
+
+  Action: Builder: Begin Task Network -> "guard", "guard_root"
+  Action: Builder: Add Compound Task -> "guard", "guard_root"
+  Action: Builder: Add Primitive Task -> "guard", "chase_target", "chase"
+  Action: Builder: Add Method -> "guard", "guard_root", "m_chase"
+  Action: Builder: Add Method Condition -> "guard", "guard_root", "m_chase", "targetVisible", ==, 1
+  Action: Builder: Set Method Utility Scorer -> "guard", "guard_root", "m_chase", "guard_combat"
+  Action: Builder: Add Method Subtask -> "guard", "guard_root", "m_chase", "chase_target"
+  Action: Builder: Register Task Network -> "guard"
 ```
 
 ### Trigger ownership guidance
@@ -1014,6 +1317,19 @@ Event: Agent behavior receives updated task
   Action: Manager.Coordination Auto Assign Nearest Free Slot -> UID, "alpha", "flank", Self.X, Self.Y, 1000, 1.2
   Action: AgentBehavior.SetWorldState -> "assignedFlankSlot", Manager.AssignedSlotId(UID, "flank")
 ```
+
+### Slot setup options with companion behavior
+Option 1 (behavior slot builder flow)
+- InitializeSlotBuilder(squadId, slotType)
+- AddSlotToBuilder(squadId, slotType, slotId, x, y)
+- LoadSlotSetFromBuilder(squadId, slotType)
+
+Option 2 (manager coordination flow)
+- Coordination: Set Slot Position
+- Coordination: Load Slot Positions From JSON
+- Coordination: Load Slot Positions From World State Key
+
+Use option 1 for reusable content assets and option 2 for direct runtime control.
 
 ### Scripting pattern (manager + behavior)
 ```javascript
@@ -1045,6 +1361,7 @@ This guide is the primary integration reference. Use the following compact contr
 - Behavior-side responsibilities: register agent type, keep per-agent world state updated, execute gameplay for current task, and mark task completion or failure.
 - Manager-side responsibilities: plan generation, scorer evaluation, alert aggregation, squad shared state, and slot reservation lifecycle.
 - Shared compatibility contract: keep task IDs and world-state key names stable, use ACE-exposed methods as the script API surface, and avoid relying on underscore-prefixed internals.
+- Scalability rule: for team projects, standardize one content path (behavior-driven builder exports or manager-direct builders) per project to avoid drift.
 
 ## 25. Tips and Common Mistakes
 - Keep key naming consistent between JSON conditions and runtime writes.
