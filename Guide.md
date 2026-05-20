@@ -1109,15 +1109,30 @@ const managerInst = runtime.objects.TactiCoreManager.getFirstInstance();
 Actions are ACE-exposed and callable as PascalCase methods.
 
 ```javascript
+// JSON registration path (still supported)
 managerInst.RegisterTaskNetwork("guard", networkJson);
 managerInst.RegisterUtilityScorer(scorerJson);
+
+// Builder path (preferred for builder-authored setups)
+managerInst.BeginUtilityScorer("guard_combat", "weighted_sum");
+managerInst.AddUtilityInputLinear("guard_combat", "targetVisible", 1, "0", 0, 0, 1, 1);
+managerInst.RegisterBuiltUtilityScorer("guard_combat");
+managerInst.BeginTaskNetwork("guard", "guard_root");
+managerInst.AddCompoundTask("guard", "guard_root");
+managerInst.AddPrimitiveTask("guard", "chase_target", "chase");
+managerInst.AddMethod("guard", "guard_root", "m_chase");
+managerInst.AddMethodCondition("guard", "guard_root", "m_chase", "targetVisible", "eq", 1);
+managerInst.AddMethodSubtask("guard", "guard_root", "m_chase", "chase_target");
+managerInst.RegisterBuiltTaskNetwork("guard");
+
+// Runtime control/query helpers
 managerInst.SetWorldStateKey(guardUID, "health", 42);
 managerInst.RequestPlan(guardUID);
 managerInst.AssignAgentToSquad(guardUID, "alpha");
 managerInst.AutoAssignNearestFreeSlot(guardUID, "alpha", "cover", 500, 300, 900, 1.2);
 ```
 
-Combo parameters in script use Construct combo indexes (0-based), so map indices carefully when calling from code.
+Combo parameters in script should use each ACE's expected value form (for example "interval_sec", "request", "minimum", or "0"/"1" for some yes-no combos).
 
 ### Reading state from script
 Expressions are also ACE-exposed, so query methods are callable directly from script using PascalCase expression names.
@@ -1235,10 +1250,10 @@ Primary integration split:
 2. Add the companion behavior to each AI-controlled object.
 3. Choose your content-authoring path (behavior-driven builders or manager-direct builders).
 4. Register all required task networks and utility scorers at startup.
-4. Ensure each agent behavior has an agentType that maps to a registered manager network.
-5. Feed world-state keys continuously from gameplay context.
-6. Execute gameplay behavior when task triggers fire.
-7. Mark task complete or failed from gameplay outcome.
+5. Ensure each agent behavior has an agentType that maps to a registered manager network.
+6. Feed world-state keys continuously from gameplay context.
+7. Execute gameplay behavior when task triggers fire.
+8. Mark task complete or failed from gameplay outcome.
 
 ### Content authoring paths
 Use whichever path matches your team workflow.

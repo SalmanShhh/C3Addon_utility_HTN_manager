@@ -9,6 +9,7 @@
         "help-url": "https://www.construct.net",
         "aceCategories": {
           "Alert": "Alert",
+          "Builder": "Builder",
           "Coordination": "Coordination",
           "Debug": "Debug",
           "Performance": "Performance",
@@ -154,6 +155,265 @@
               "level": {
                 "name": "Level",
                 "desc": "Alert level from 0 to 1."
+              }
+            }
+          },
+          "AddCompoundTask": {
+            "list-name": "Builder: Add Compound Task",
+            "display-text": "Add compound task {1} for agent type {0}",
+            "description": "Adds or ensures a compound task node in the current builder draft.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Compound task name."
+              }
+            }
+          },
+          "AddMethod": {
+            "list-name": "Builder: Add Method",
+            "display-text": "Add method {2} on task {1} for agent type {0}",
+            "description": "Creates a method branch on a compound task.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Compound task name."
+              },
+              "methodId": {
+                "name": "Method ID",
+                "desc": "Unique method id within that task."
+              }
+            }
+          },
+          "AddMethodCondition": {
+            "list-name": "Builder: Add Method Condition",
+            "display-text": "Add condition {3} {4} {5} to method {2} on task {1} for agent type {0}",
+            "description": "Adds one world-state condition gate to a method.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Compound task name."
+              },
+              "methodId": {
+                "name": "Method ID",
+                "desc": "Method id to edit."
+              },
+              "key": {
+                "name": "State Key",
+                "desc": "World/global state key."
+              },
+              "op": {
+                "name": "Operator",
+                "desc": "Comparison operator.",
+                "items": {
+                  "eq": "== (Equal)",
+                  "neq": "!= (Not equal)",
+                  "gt": "> (Greater than)",
+                  "gte": ">= (Greater or equal)",
+                  "lt": "< (Less than)",
+                  "lte": "<= (Less or equal)"
+                }
+              },
+              "value": {
+                "name": "Value",
+                "desc": "Value to compare against."
+              }
+            }
+          },
+          "AddMethodSubtask": {
+            "list-name": "Builder: Add Method Subtask",
+            "display-text": "Add subtask {3} to method {2} on task {1} for agent type {0}",
+            "description": "Adds one subtask to a method in execution order.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Compound task name."
+              },
+              "methodId": {
+                "name": "Method ID",
+                "desc": "Method id to edit."
+              },
+              "subtaskTaskName": {
+                "name": "Subtask Task Name",
+                "desc": "Task name referenced by this method."
+              }
+            }
+          },
+          "AddPrimitiveTask": {
+            "list-name": "Builder: Add Primitive Task",
+            "display-text": "Add primitive task {1} with runtime id {2} for agent type {0}",
+            "description": "Adds a primitive task that resolves to one runtime task id.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Task name used by methods."
+              },
+              "primitiveId": {
+                "name": "Primitive ID",
+                "desc": "Task id output by the planner."
+              }
+            }
+          },
+          "AddUtilityInputLinear": {
+            "list-name": "Builder: Add Utility Input (Linear)",
+            "display-text": "Add utility input key {1} weight {2} invert {3} points ({4},{5}) to ({6},{7}) for scorer {0}",
+            "description": "Adds one scorer input with a 2-point curve.",
+            "params": {
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Scorer id to edit."
+              },
+              "worldStateKey": {
+                "name": "World State Key",
+                "desc": "Input key read from state."
+              },
+              "weight": {
+                "name": "Weight",
+                "desc": "Input contribution multiplier."
+              },
+              "invert": {
+                "name": "Invert",
+                "desc": "Flip the curve output.",
+                "items": {
+                  "0": "No",
+                  "1": "Yes"
+                }
+              },
+              "x1": {
+                "name": "Point 1 X",
+                "desc": "Curve point 1 x-value."
+              },
+              "y1": {
+                "name": "Point 1 Y",
+                "desc": "Curve point 1 y-value."
+              },
+              "x2": {
+                "name": "Point 2 X",
+                "desc": "Curve point 2 x-value."
+              },
+              "y2": {
+                "name": "Point 2 Y",
+                "desc": "Curve point 2 y-value."
+              }
+            }
+          },
+          "BeginTaskNetwork": {
+            "list-name": "Builder: Begin Task Network",
+            "display-text": "Begin task-network draft for agent type {0} with root task {1}",
+            "description": "Starts a clean task-network draft for one agent type.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "rootTask": {
+                "name": "Root Task",
+                "desc": "Top-level compound task name."
+              }
+            }
+          },
+          "BeginUtilityScorer": {
+            "list-name": "Builder: Begin Utility Scorer",
+            "display-text": "Begin utility-scorer draft for scorer {0} with aggregation {1}",
+            "description": "Starts a clean utility-scorer draft.",
+            "params": {
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Unique scorer id."
+              },
+              "aggregation": {
+                "name": "Aggregation",
+                "desc": "How input values combine.",
+                "items": {
+                  "weighted_sum": "Weighted sum",
+                  "minimum": "Minimum"
+                }
+              }
+            }
+          },
+          "ClearTaskNetwork": {
+            "list-name": "Builder: Clear Task Network Draft",
+            "display-text": "Clear task-network draft for agent type {0}",
+            "description": "Removes the in-progress task-network draft for one agent type.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              }
+            }
+          },
+          "ClearUtilityScorer": {
+            "list-name": "Builder: Clear Utility Scorer Draft",
+            "display-text": "Clear utility-scorer draft for scorer {0}",
+            "description": "Removes the in-progress utility-scorer draft.",
+            "params": {
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Scorer id to clear."
+              }
+            }
+          },
+          "RegisterBuiltTaskNetwork": {
+            "list-name": "Builder: Register Task Network",
+            "display-text": "Register built task-network draft for agent type {0}",
+            "description": "Finalizes and registers the current task-network draft.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              }
+            }
+          },
+          "RegisterBuiltUtilityScorer": {
+            "list-name": "Builder: Register Utility Scorer",
+            "display-text": "Register built utility-scorer draft for scorer {0}",
+            "description": "Finalizes and registers the current utility-scorer draft.",
+            "params": {
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Scorer id to register."
+              }
+            }
+          },
+          "SetMethodUtilityScorer": {
+            "list-name": "Builder: Set Method Utility Scorer",
+            "display-text": "Set scorer {3} for method {2} on task {1} for agent type {0}",
+            "description": "Links a utility scorer to one method branch.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type key."
+              },
+              "taskName": {
+                "name": "Task Name",
+                "desc": "Compound task name."
+              },
+              "methodId": {
+                "name": "Method ID",
+                "desc": "Method id to edit."
+              },
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Registered utility scorer id."
               }
             }
           },

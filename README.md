@@ -1,9 +1,9 @@
 <img src="./src/icon.svg" width="100" /><br>
 # Utility-Driven HTN (Hierarchical Task Network) Manager
 <i>Build smarter enemy and NPC AI with utility-driven HTN planning, alert reactions, and squad coordination, plus scalable time-sliced performance in addition to powerful behavior trees. This plugin provides a flexible framework for creating complex, data-driven AI behaviors in your games.</i> <br>
-### Version 1.0.0.1
+### Version 1.1.1.0
 
-[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases/download/salmanshh_DHTN_manager-1.0.0.1.c3addon/salmanshh_DHTN_manager-1.0.0.1.c3addon)
+[<img src="https://placehold.co/200x50/4493f8/FFF?text=Download&font=montserrat" width="200"/>](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases/download/salmanshh_DHTN_manager-1.1.1.0.c3addon/salmanshh_DHTN_manager-1.1.1.0.c3addon)
 <br>
 <sub> [See all releases](https://github.com/SalmanShhh/C3Addon_utility_driven_htn_hierarchical_task_network_manager/releases) </sub> <br>
 
@@ -63,6 +63,19 @@ npm run dev
 | Alert: Clear Stimuli | Removes current stored stimuli. Use case: reset sensory pressure after a scripted state change. | Agent UID             *(number)* <br> |
 | Alert: Decay Alert | Lowers alert by a fixed amount. Use case: calm an agent after the player escapes. | Agent UID             *(number)* <br>Amount             *(number)* <br> |
 | Alert: Set Alert Level | Sets alert level directly from 0 to 1. Use case: force combat mode when player is spotted. | Agent UID             *(number)* <br>Level             *(number)* <br> |
+| Builder: Add Compound Task | Adds or ensures a compound task node in the current builder draft. | Agent Type             *(string)* <br>Task Name             *(string)* <br> |
+| Builder: Add Method | Creates a method branch on a compound task. | Agent Type             *(string)* <br>Task Name             *(string)* <br>Method ID             *(string)* <br> |
+| Builder: Add Method Condition | Adds one world-state condition gate to a method. | Agent Type             *(string)* <br>Task Name             *(string)* <br>Method ID             *(string)* <br>State Key             *(string)* <br>Operator             *(combo)* <br>Value             *(any)* <br> |
+| Builder: Add Method Subtask | Adds one subtask to a method in execution order. | Agent Type             *(string)* <br>Task Name             *(string)* <br>Method ID             *(string)* <br>Subtask Task Name             *(string)* <br> |
+| Builder: Add Primitive Task | Adds a primitive task that resolves to one runtime task id. | Agent Type             *(string)* <br>Task Name             *(string)* <br>Primitive ID             *(string)* <br> |
+| Builder: Add Utility Input (Linear) | Adds one scorer input with a 2-point curve. | Scorer ID             *(string)* <br>World State Key             *(string)* <br>Weight             *(number)* <br>Invert             *(combo)* <br>Point 1 X             *(number)* <br>Point 1 Y             *(number)* <br>Point 2 X             *(number)* <br>Point 2 Y             *(number)* <br> |
+| Builder: Begin Task Network | Starts a clean task-network draft for one agent type. | Agent Type             *(string)* <br>Root Task             *(string)* <br> |
+| Builder: Begin Utility Scorer | Starts a clean utility-scorer draft. | Scorer ID             *(string)* <br>Aggregation             *(combo)* <br> |
+| Builder: Clear Task Network Draft | Removes the in-progress task-network draft for one agent type. | Agent Type             *(string)* <br> |
+| Builder: Clear Utility Scorer Draft | Removes the in-progress utility-scorer draft. | Scorer ID             *(string)* <br> |
+| Builder: Register Task Network | Finalizes and registers the current task-network draft. | Agent Type             *(string)* <br> |
+| Builder: Register Utility Scorer | Finalizes and registers the current utility-scorer draft. | Scorer ID             *(string)* <br> |
+| Builder: Set Method Utility Scorer | Links a utility scorer to one method branch. | Agent Type             *(string)* <br>Task Name             *(string)* <br>Method ID             *(string)* <br>Scorer ID             *(string)* <br> |
 | Coordination: Assign Agent To Squad | Puts one agent in a squad. Use case: build patrol teams at layout start. | Agent UID             *(number)* <br>Squad ID             *(string)* <br> |
 | Coordination: Auto Assign Nearest Free Slot | Finds nearest free slot and reserves it. Use case: auto-pick closest cover for each squad member. | Agent UID             *(number)* <br>Squad ID             *(string)* <br>Slot Type             *(string)* <br>Agent X             *(number)* <br>Agent Y             *(number)* <br>Max Distance             *(number)* <br>TTL (sec)             *(number)* <br> |
 | Coordination: Clear Squad State Key | Removes one shared squad key. Use case: clear temporary rally point after regroup. | Squad ID             *(string)* <br>Key             *(string)* <br> |
@@ -172,6 +185,10 @@ npm run dev
 
 ---
 ## Changelog
+
+**1.1.1.0**
+
+**1.1.0.0**
 
 **1.0.0.1**
 
