@@ -1,118 +1,1209 @@
 {
   "languageTag": "en-US",
-  "fileDescription": "Strings for sample_addon.",
+  "fileDescription": "Strings for salmanshh_dhtn_manager.",
   "text": {
     "plugins": {
-      "sample_addon": {
-        "name": "Sample Addon",
-        "description": "Description",
+      "salmanshh_dhtn_manager": {
+        "name": "Utility-Driven HTN (Hierarchical Task Network) Manager",
+        "description": "Utility-driven HTN planning manager with scorer-based branch selection.",
         "help-url": "https://www.construct.net",
         "aceCategories": {
-          "Ace_Folders_In_Category_Folder": "Ace_Folders_In_Category_Folder",
-          "Aces_Files_In_Category_Folder": "Aces_Files_In_Category_Folder",
-          "Aces_In_Single_File": "Aces_In_Single_File"
+          "Alert": "Alert",
+          "Coordination": "Coordination",
+          "Debug": "Debug",
+          "Performance": "Performance",
+          "Planning": "Planning",
+          "Setup": "Setup",
+          "State": "State",
+          "Triggers": "Triggers",
+          "Queries": "Queries",
+          "Registry": "Registry"
         },
-        "properties": {},
+        "properties": {
+          "enabled": {
+            "name": "Enabled",
+            "desc": "Turn planner processing on or off. Use case: disable AI during pause menus."
+          },
+          "debugMode": {
+            "name": "Debug mode",
+            "desc": "Show debug logs in the console. Use case: inspect why an agent picked a task."
+          },
+          "planningMode": {
+            "name": "Planning mode",
+            "desc": "Choose how often planning runs. Start with Per frame for simple projects; switch to Interval when many agents are active to reduce CPU usage.",
+            "items": {
+              "per_frame": "Per frame",
+              "interval_sec": "Interval (seconds)"
+            }
+          },
+          "planningIntervalSec": {
+            "name": "Planning interval (sec)",
+            "desc": "Time between planning updates when Planning mode is Interval. Example: 0.2 means one planning pass every 0.2 seconds (5 times per second)."
+          },
+          "maxAgentsPerTick": {
+            "name": "Max agents per update",
+            "desc": "How many agents to evaluate each update; 0 means all. Use case: cap spikes in large crowds."
+          },
+          "planningTimeSliceSec": {
+            "name": "Planning time slice (sec)",
+            "desc": "Maximum time allowed for planning work in one update. 0 disables this limit. Example: 0.002 gives planning about 2 ms per update to keep frames smooth."
+          },
+          "interruptThreshold": {
+            "name": "Interrupt threshold",
+            "desc": "Minimum utility score needed to interrupt a running task. Use case: reduce rapid plan swapping."
+          },
+          "maxPlanDepth": {
+            "name": "Max plan depth",
+            "desc": "Stops very deep or looping plans. Use case: catch broken network JSON safely."
+          },
+          "alertDecayRate": {
+            "name": "Alert decay rate",
+            "desc": "Alert drop per second with no stimulus. Use case: enemies calm down over time."
+          },
+          "alertTier1Threshold": {
+            "name": "Alert tier 1",
+            "desc": "Level where agent becomes suspicious. Use case: tune early warning behavior."
+          },
+          "alertTier2Threshold": {
+            "name": "Alert tier 2",
+            "desc": "Level where agent becomes alerted. Use case: switch from patrol to search."
+          },
+          "alertTier3Threshold": {
+            "name": "Alert tier 3",
+            "desc": "Level where agent enters combat. Use case: delay full aggression until threat is clear."
+          }
+        },
         "actions": {
-          "ActionCombo": {
-            "list-name": "Sample Action Combo",
-            "display-text": "Sample Action Combo {0}",
-            "description": "This is a sample action",
+          "AddAlertStimulus": {
+            "list-name": "Alert: Add Alert Stimulus",
+            "display-text": "Add {1} stimulus to agent {0} with intensity {2} at {3}, {4}",
+            "description": "Adds a simple stimulus event. Use case: raise alert when a guard hears a noise.",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param",
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "stimulusType": {
+                "name": "Type",
+                "desc": "Stimulus type string."
+              },
+              "intensity": {
+                "name": "Intensity",
+                "desc": "Stimulus intensity from 0 to 1."
+              },
+              "x": {
+                "name": "X",
+                "desc": "Stimulus X position."
+              },
+              "y": {
+                "name": "Y",
+                "desc": "Stimulus Y position."
+              }
+            }
+          },
+          "AddAlertStimulusExtended": {
+            "list-name": "Alert: Add Alert Stimulus Extended",
+            "display-text": "Add extended alert stimulus to agent {0} using {1}",
+            "description": "Adds a detailed stimulus from JSON. Use case: set custom decay and update world state in one call.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "stimulusJson": {
+                "name": "Stimulus JSON",
+                "desc": "Stimulus payload JSON."
+              }
+            }
+          },
+          "ClearStimuli": {
+            "list-name": "Alert: Clear Stimuli",
+            "display-text": "Clear stimuli for agent {0}",
+            "description": "Removes current stored stimuli. Use case: reset sensory pressure after a scripted state change.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "DecayAlert": {
+            "list-name": "Alert: Decay Alert",
+            "display-text": "Decay alert for agent {0} by {1}",
+            "description": "Lowers alert by a fixed amount. Use case: calm an agent after the player escapes.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "amount": {
+                "name": "Amount",
+                "desc": "Amount to subtract."
+              }
+            }
+          },
+          "SetAlertLevel": {
+            "list-name": "Alert: Set Alert Level",
+            "display-text": "Set alert level for agent {0} to {1}",
+            "description": "Sets alert level directly from 0 to 1. Use case: force combat mode when player is spotted.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "level": {
+                "name": "Level",
+                "desc": "Alert level from 0 to 1."
+              }
+            }
+          },
+          "AssignAgentToSquad": {
+            "list-name": "Coordination: Assign Agent To Squad",
+            "display-text": "Assign agent {0} to squad {1}",
+            "description": "Puts one agent in a squad. Use case: build patrol teams at layout start.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to assign."
+              },
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              }
+            }
+          },
+          "AutoAssignNearestFreeSlot": {
+            "list-name": "Coordination: Auto Assign Nearest Free Slot",
+            "display-text": "Auto assign nearest free {2} slot in squad {1} to agent {0} from {3}, {4} max {5} ttl {6}",
+            "description": "Finds nearest free slot and reserves it. Use case: auto-pick closest cover for each squad member.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to assign."
+              },
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "agentX": {
+                "name": "Agent X",
+                "desc": "Agent world X used for distance."
+              },
+              "agentY": {
+                "name": "Agent Y",
+                "desc": "Agent world Y used for distance."
+              },
+              "maxDistance": {
+                "name": "Max Distance",
+                "desc": "0 means no distance limit."
+              },
+              "ttlSec": {
+                "name": "TTL (sec)",
+                "desc": "Reservation lifetime."
+              }
+            }
+          },
+          "ClearSquadStateKey": {
+            "list-name": "Coordination: Clear Squad State Key",
+            "display-text": "Clear squad {0} state {1}",
+            "description": "Removes one shared squad key. Use case: clear temporary rally point after regroup.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "State key name."
+              }
+            }
+          },
+          "InvalidateSquadPlans": {
+            "list-name": "Coordination: Invalidate Squad Plans",
+            "display-text": "Invalidate plans for squad {0}",
+            "description": "Marks squad members stale for next planning update. Use case: tactic changed for full squad.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              }
+            }
+          },
+          "LoadSlotPositionsFromJson": {
+            "list-name": "Coordination: Load Slot Positions From JSON",
+            "display-text": "Load slot positions for squad {0} type {1} from {2}",
+            "description": "Loads many slot positions from JSON array data. Use case: import a pre-authored cover map.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotsJson": {
+                "name": "Slots JSON",
+                "desc": "JSON array of {id,x,y} entries."
+              }
+            }
+          },
+          "LoadSlotPositionsFromWorldStateKey": {
+            "list-name": "Coordination: Load Slot Positions From World State Key",
+            "display-text": "Load slot positions for squad {0} type {1} from {2} key {3} agent {4}",
+            "description": "Loads slot positions from a world-state key. Use case: share dynamic slot maps through state data.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "scope": {
+                "name": "Scope",
+                "desc": "Read from global state or an agent state.",
                 "items": {
-                  "test": "test",
-                  "test2": "test2"
+                  "global": "Global",
+                  "agent": "Agent"
+                }
+              },
+              "key": {
+                "name": "Key",
+                "desc": "State key containing JSON/array slot data."
+              },
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Used when scope is Agent."
+              }
+            }
+          },
+          "ReleaseSlot": {
+            "list-name": "Coordination: Release Slot",
+            "display-text": "Release slot {2} of type {1} in squad {0}",
+            "description": "Releases a reserved slot. Use case: free cover slot when an agent moves away.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              }
+            }
+          },
+          "RemoveAgentFromSquad": {
+            "list-name": "Coordination: Remove Agent From Squad",
+            "display-text": "Remove agent {0} from squad",
+            "description": "Removes one agent from its squad. Use case: cleanup when an NPC is defeated.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to remove."
+              }
+            }
+          },
+          "RequestSquadPlans": {
+            "list-name": "Coordination: Request Squad Plans",
+            "display-text": "Request plans for squad {0}",
+            "description": "Requests immediate planning for squad members. Use case: execute synced reaction now.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              }
+            }
+          },
+          "ReserveSlot": {
+            "list-name": "Coordination: Reserve Slot",
+            "display-text": "Reserve slot {2} of type {1} in squad {0} for agent {3} for {4} sec",
+            "description": "Reserves a squad slot with TTL. Use case: allocate unique cover nodes to avoid overlap.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              },
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent claiming slot."
+              },
+              "ttlSec": {
+                "name": "TTL (sec)",
+                "desc": "Reservation lifetime in seconds."
+              }
+            }
+          },
+          "SetSlotPosition": {
+            "list-name": "Coordination: Set Slot Position",
+            "display-text": "Set slot {2} of type {1} in squad {0} to {3}, {4}",
+            "description": "Defines one slot position from event-sheet coordinates. Use case: set cover node positions at layout start.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              },
+              "x": {
+                "name": "X",
+                "desc": "Slot world X."
+              },
+              "y": {
+                "name": "Y",
+                "desc": "Slot world Y."
+              }
+            }
+          },
+          "SetSlotReservation": {
+            "list-name": "Coordination: Set Slot Reservation",
+            "display-text": "{0} slot {3} of type {2} in squad {1} for agent {4} ttl {5}",
+            "description": "Combined reserve/release slot action. Use case: simplify event sheets while keeping full slot control.",
+            "params": {
+              "mode": {
+                "name": "Mode",
+                "desc": "Reserve or release operation.",
+                "items": {
+                  "reserve": "Reserve",
+                  "release": "Release"
+                }
+              },
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              },
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Used when mode is Reserve."
+              },
+              "ttlSec": {
+                "name": "TTL (sec)",
+                "desc": "Used when mode is Reserve."
+              }
+            }
+          },
+          "SetSquadLeader": {
+            "list-name": "Coordination: Set Squad Leader",
+            "display-text": "Set squad {0} leader to agent {1}",
+            "description": "Sets the leader agent for a squad. Use case: only leader chooses squad tactic.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Leader agent UID."
+              }
+            }
+          },
+          "SetSquadStateKey": {
+            "list-name": "Coordination: Set Squad State Key",
+            "display-text": "Set squad {0} state {1} to {2}",
+            "description": "Writes shared squad state. Use case: set tactic to flank_left for all members.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "State key name."
+              },
+              "value": {
+                "name": "Value",
+                "desc": "State value."
+              }
+            }
+          },
+          "SquadPlanControl": {
+            "list-name": "Coordination: Squad Plan Control",
+            "display-text": "{0} plans for squad {1}",
+            "description": "Combined invalidate/request squad planning action. Use case: choose delayed or immediate squad replan with one ACE.",
+            "params": {
+              "mode": {
+                "name": "Mode",
+                "desc": "Invalidate for next update or request now.",
+                "items": {
+                  "invalidate": "Invalidate",
+                  "request": "Request Now"
+                }
+              },
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              }
+            }
+          },
+          "DumpAgentState": {
+            "list-name": "Debug: Dump Agent State",
+            "display-text": "Dump agent state for agent {0}",
+            "description": "Prints one agent snapshot in the console. Use case: quickly check world state and current plan.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "SetDebugMode": {
+            "list-name": "Debug: Set Debug Mode",
+            "display-text": "Set debug mode to {0}",
+            "description": "Turns debug logging on or off. Use case: inspect planner decisions while testing.",
+            "params": {
+              "enabled": {
+                "name": "Enabled",
+                "desc": "True to enable debug logging."
+              }
+            }
+          },
+          "ProcessPlanningNow": {
+            "list-name": "Performance: Process Planning Now",
+            "display-text": "Process planning now",
+            "description": "Runs one planning pass immediately. Use case: apply state changes now instead of waiting.",
+            "params": {}
+          },
+          "SetEnabled": {
+            "list-name": "Performance: Set Enabled",
+            "display-text": "Set manager enabled to {0}",
+            "description": "Turns processing on or off. Use case: disable AI while game menus are open.",
+            "params": {
+              "enabled": {
+                "name": "Enabled",
+                "desc": "True to process planning, false to skip updates."
+              }
+            }
+          },
+          "SetMaxAgentsPerUpdate": {
+            "list-name": "Performance: Set Max Agents Per Update",
+            "display-text": "Set max agents per update to {0}",
+            "description": "Caps agents evaluated per update. Use case: smooth frame-time spikes with large NPC groups.",
+            "params": {
+              "count": {
+                "name": "Count",
+                "desc": "0 means all agents; any other value is a per-update cap."
+              }
+            }
+          },
+          "SetPlanningIntervalSec": {
+            "list-name": "Performance: Set Planning Interval",
+            "display-text": "Set planning interval to {0} seconds",
+            "description": "Sets time between planning passes in seconds for Interval mode. Beginner tip: try 0.1 first, then raise to 0.2 or 0.25 if you need more performance.",
+            "params": {
+              "seconds": {
+                "name": "Seconds",
+                "desc": "Seconds between planning updates in interval mode."
+              }
+            }
+          },
+          "SetPlanningMode": {
+            "list-name": "Performance: Set Planning Mode",
+            "display-text": "Set planning mode to {0}",
+            "description": "Switches how often planning runs. Beginner tip: use Per frame while learning, then switch to Interval if frame rate drops with many agents.",
+            "params": {
+              "mode": {
+                "name": "Mode",
+                "desc": "Per frame updates every tick; interval uses seconds.",
+                "items": {
+                  "per_frame": "Per frame",
+                  "interval_sec": "Interval (seconds)"
                 }
               }
             }
           },
-          "Action": {
-            "list-name": "Sample Action",
-            "display-text": "Sample Action {0}",
-            "description": "This is a sample action",
+          "SetPlanningTimeSliceSec": {
+            "list-name": "Performance: Set Planning Time Slice",
+            "display-text": "Set planning time slice to {0} seconds",
+            "description": "Sets max planning time allowed per update in seconds. Beginner tip: start at 0 (off), then try 0.001-0.003 if big AI spikes cause frame drops.",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
+              "seconds": {
+                "name": "Seconds",
+                "desc": "0 disables time slicing; higher values allow more planning work each update."
               }
             }
           },
-          "AsyncAction": {
-            "list-name": "Sample Action Async",
-            "display-text": "Sample Action Async",
-            "description": "This is a sample action",
-            "params": {}
-          },
-          "SampleAction": {
-            "list-name": "Sample Action",
-            "display-text": "Sample Action {0}",
-            "description": "This is a sample action",
+          "ClearPlan": {
+            "list-name": "Planning: Clear Plan",
+            "display-text": "Clear plan for agent {0}",
+            "description": "Removes remaining planned tasks. Use case: keep an agent idle until new orders arrive.",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "ForceTask": {
+            "list-name": "Planning: Force Task",
+            "display-text": "Force task {1} for agent {0}",
+            "description": "Forces one task to run first. Use case: trigger a scripted reaction during a cutscene.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "taskId": {
+                "name": "Task ID",
+                "desc": "Primitive task ID to force."
+              }
+            }
+          },
+          "InvalidatePlan": {
+            "list-name": "Planning: Invalidate Plan",
+            "display-text": "Invalidate plan for agent {0}",
+            "description": "Marks a plan as outdated for next update. Use case: world changed but current task should finish.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "PausePlanning": {
+            "list-name": "Planning: Pause Planning",
+            "display-text": "Pause planning for agent {0}",
+            "description": "Stops planning updates for one agent. Use case: freeze NPC AI while a dialogue plays.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "RequestPlan": {
+            "list-name": "Planning: Request Plan",
+            "display-text": "Request plan for agent {0}",
+            "description": "Builds a fresh plan right now. Use case: replan instantly after a major event.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "ResumePlanning": {
+            "list-name": "Planning: Resume Planning",
+            "display-text": "Resume planning for agent {0}",
+            "description": "Restarts planning for one agent. Use case: resume AI after a stun or cutscene.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "ClearWorldStateKey": {
+            "list-name": "Setup: Clear World State Key",
+            "display-text": "Clear world state {1} for agent {0}",
+            "description": "Removes one world-state key from an agent. Use case: clear last known target after search ends.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "World state key to clear."
+              }
+            }
+          },
+          "RegisterTaskNetwork": {
+            "list-name": "Setup: Register Task Network",
+            "display-text": "Register task network for {0} from {1}",
+            "description": "Loads a task tree from JSON for one agent type. Use case: register guard AI at layout start.",
+            "params": {
+              "agentType": {
+                "name": "Agent type",
+                "desc": "Agent type string used to look up the network."
+              },
+              "networkJson": {
+                "name": "Network JSON",
+                "desc": "HTN task network definition as JSON."
+              }
+            }
+          },
+          "RegisterUtilityScorer": {
+            "list-name": "Setup: Register Utility Scorer",
+            "display-text": "Register utility scorer from {0}",
+            "description": "Loads a utility scoring rule from JSON. Use case: tune attack vs retreat behavior by data.",
+            "params": {
+              "scorerJson": {
+                "name": "Scorer JSON",
+                "desc": "Utility scorer definition as JSON."
+              }
+            }
+          },
+          "SetGlobalStateKey": {
+            "list-name": "Setup: Set Global State Key",
+            "display-text": "Set global state {0} to {1}",
+            "description": "Sets a value shared by all agents. Use case: toggle a global alarm state.",
+            "params": {
+              "key": {
+                "name": "Key",
+                "desc": "Global state key to set."
+              },
+              "value": {
+                "name": "Value",
+                "desc": "Value to store."
+              }
+            }
+          },
+          "SetWorldStateKey": {
+            "list-name": "Setup: Set World State Key",
+            "display-text": "Set world state {1} for agent {0} to {2}",
+            "description": "Sets one value for one agent. Use case: update health or target visibility each tick.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "World state key to set."
+              },
+              "value": {
+                "name": "Value",
+                "desc": "Value to store."
               }
             }
           }
         },
         "conditions": {
-          "ConditionCombo": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition {0}",
-            "description": "This is a sample condition",
+          "IsAgentInSquad": {
+            "list-name": "Is Agent In Squad",
+            "display-text": "Is agent {0} in squad {1}",
+            "description": "Checks current squad membership. Use case: run squad-only logic per agent.",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param",
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to test."
+              },
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              }
+            }
+          },
+          "IsSlotFree": {
+            "list-name": "Is Slot Free",
+            "display-text": "Is slot {2} of type {1} in squad {0} free",
+            "description": "Checks if a slot is available. Use case: only reserve cover if not already occupied.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Target squad ID."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover or flank."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              }
+            }
+          },
+          "IsSquadLeader": {
+            "list-name": "Is Squad Leader",
+            "display-text": "Is agent {0} squad leader",
+            "description": "Checks leader status in current squad. Use case: leader-only tactic writes.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to test."
+              }
+            }
+          },
+          "OnSlotReleased": {
+            "list-name": "On Slot Released",
+            "display-text": "On slot released",
+            "description": "Triggered when a slot is released or expires. Use case: make slot visible as available again.",
+            "params": {}
+          },
+          "OnSlotReserved": {
+            "list-name": "On Slot Reserved",
+            "display-text": "On slot reserved",
+            "description": "Triggered when a slot gets reserved. Use case: update debug overlays for cover claims.",
+            "params": {}
+          },
+          "OnSquadMembershipChanged": {
+            "list-name": "On Squad Membership Changed",
+            "display-text": "On squad membership changed",
+            "description": "Triggered when an agent joins or leaves a squad. Use case: refresh squad HUD widgets.",
+            "params": {}
+          },
+          "OnSquadStateChanged": {
+            "list-name": "On Squad State Changed",
+            "display-text": "On squad state changed",
+            "description": "Triggered when shared squad key-values change. Use case: react when tactic flips.",
+            "params": {}
+          },
+          "HasWorldStateKey": {
+            "list-name": "Has World State Key",
+            "display-text": "Has agent {0} world state key {1}",
+            "description": "True if a world-state key exists. Use case: guard logic when optional data may be missing.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "World state key to check."
+              }
+            }
+          },
+          "IsAgentPaused": {
+            "list-name": "Is Agent Paused",
+            "display-text": "Is agent {0} paused",
+            "description": "True when planning is paused for that agent. Use case: skip AI updates during scripted moments.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "IsAgentPlanning": {
+            "list-name": "Is Agent Planning",
+            "display-text": "Is agent {0} planning",
+            "description": "True when an agent has work to do. Use case: branch events when an NPC is currently busy.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "IsAlertTier": {
+            "list-name": "Is Alert Tier",
+            "display-text": "Is agent {0} in alert tier {1}",
+            "description": "Checks the current alert tier name. Use case: run different events for suspicious vs combat.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "tier": {
+                "name": "Tier",
+                "desc": "Alert tier name.",
                 "items": {
-                  "TRUE": "True",
-                  "FALSE": "False"
+                  "unaware": "Unaware",
+                  "suspicious": "Suspicious",
+                  "alerted": "Alerted",
+                  "combat": "Combat"
                 }
               }
             }
           },
-          "Condition": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition {0}",
-            "description": "This is a sample condition",
+          "IsTaskNetworkRegistered": {
+            "list-name": "Is Task Network Registered",
+            "display-text": "Is task network registered for {0}",
+            "description": "True when a task network is loaded for that type. Use case: verify setup before spawning agents.",
             "params": {
-              "param1": {
-                "name": "Param1",
-                "desc": "This is a sample param"
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type string."
               }
             }
           },
-          "Trigger": {
-            "list-name": "Sample Trigger",
-            "display-text": "Sample Trigger",
-            "description": "This is a sample trigger",
+          "IsUtilityScorerRegistered": {
+            "list-name": "Is Utility Scorer Registered",
+            "display-text": "Is utility scorer registered for {0}",
+            "description": "True when a scorer ID is available. Use case: validate data packs before combat starts.",
+            "params": {
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Utility scorer identifier."
+              }
+            }
+          },
+          "OnAlertStateChanged": {
+            "list-name": "On Alert State Changed",
+            "display-text": "On alert state changed",
+            "description": "Triggered when alert tier changes. Use case: change music or UI for suspicion/combat states.",
             "params": {}
           },
-          "SampleCondition": {
-            "list-name": "Sample Condition",
-            "display-text": "Sample Condition",
-            "description": "This is a sample condition",
+          "OnPlanFailed": {
+            "list-name": "On Plan Failed",
+            "display-text": "On plan failed",
+            "description": "Triggered when no valid plan is found. Use case: force an idle or safe fallback action.",
+            "params": {}
+          },
+          "OnPlanInterrupted": {
+            "list-name": "On Plan Interrupted",
+            "display-text": "On plan interrupted",
+            "description": "Triggered when high-urgency input interrupts a plan. Use case: swap from patrol to combat immediately.",
+            "params": {}
+          },
+          "OnPrimitiveTaskStarted": {
+            "list-name": "On Primitive Task Started",
+            "display-text": "On primitive task started",
+            "description": "Triggered when a primitive task begins. Use case: play movement or attack events for that task ID.",
+            "params": {}
+          },
+          "OnStimulusReceived": {
+            "list-name": "On Stimulus Received",
+            "display-text": "On stimulus received",
+            "description": "Triggered when any stimulus is added. Use case: spawn investigation markers at stimulus coordinates.",
+            "params": {}
+          },
+          "OnTaskCompleted": {
+            "list-name": "On Task Completed",
+            "display-text": "On task completed",
+            "description": "Triggered after task completion is reported. Use case: chain to the next animation state.",
+            "params": {}
+          },
+          "OnTaskFailed": {
+            "list-name": "On Task Failed",
+            "display-text": "On task failed",
+            "description": "Triggered when a task fails. Use case: run a fallback task or recovery behavior.",
+            "params": {}
+          },
+          "OnTaskNetworkRegistered": {
+            "list-name": "On Task Network Registered",
+            "display-text": "On task network registered",
+            "description": "Triggered after a network loads. Use case: print setup success in debug events.",
             "params": {}
           }
         },
         "expressions": {
-          "Expression2": {
-            "translated-name": "Expression2",
-            "description": "Sample Expression",
+          "AgentSquad": {
+            "translated-name": "AgentSquad",
+            "description": "Gets the squad ID for an agent. Use case: print squad tags in debug text.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to query."
+              }
+            }
+          },
+          "AssignedSlotId": {
+            "translated-name": "AssignedSlotId",
+            "description": "Gets assigned slot ID for an agent and slot type. Use case: drive movement to assigned cover node.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Agent to query."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover."
+              }
+            }
+          },
+          "CountSquadAgents": {
+            "translated-name": "CountSquadAgents",
+            "description": "Counts members in a squad. Use case: detect when reinforcements are needed.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              }
+            }
+          },
+          "CountSquads": {
+            "translated-name": "CountSquads",
+            "description": "Counts active squads. Use case: monitor coordination load.",
             "params": {}
           },
-          "Expression": {
-            "translated-name": "Expression",
-            "description": "Sample Expression",
+          "GetSquadAgentUIDByIndex": {
+            "translated-name": "GetSquadAgentUIDByIndex",
+            "description": "Gets squad member UID at index. Use case: iterate members in a repeat loop.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              },
+              "index": {
+                "name": "Index",
+                "desc": "Zero-based index."
+              }
+            }
+          },
+          "SlotOwner": {
+            "translated-name": "SlotOwner",
+            "description": "Gets owner UID of a slot. Use case: verify which agent owns a cover slot.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              },
+              "slotType": {
+                "name": "Slot Type",
+                "desc": "Category like cover."
+              },
+              "slotId": {
+                "name": "Slot ID",
+                "desc": "Slot identifier."
+              }
+            }
+          },
+          "SquadLeader": {
+            "translated-name": "SquadLeader",
+            "description": "Gets leader UID for a squad. Use case: route leader-only commands.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              }
+            }
+          },
+          "SquadStateValue": {
+            "translated-name": "SquadStateValue",
+            "description": "Reads one shared squad state key. Use case: followers read current tactic.",
+            "params": {
+              "squadId": {
+                "name": "Squad ID",
+                "desc": "Squad key string."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "Shared state key."
+              }
+            }
+          },
+          "ActiveTask": {
+            "translated-name": "ActiveTask",
+            "description": "Current active task for one agent. Use case: show simple behavior labels above NPCs.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "AlertLevel": {
+            "translated-name": "AlertLevel",
+            "description": "Alert level value from trigger context. Use case: drive bar fill in a stealth meter.",
             "params": {}
           },
-          "SampleExpression": {
-            "translated-name": "SampleExpression",
-            "description": "This is a sample expression",
+          "AlertTierIndex": {
+            "translated-name": "AlertTierIndex",
+            "description": "Numeric alert tier from trigger context. Use case: simple tier-based UI indicators.",
             "params": {}
+          },
+          "AlertTierName": {
+            "translated-name": "AlertTierName",
+            "description": "Named alert tier from trigger context. Use case: show readable debug text in HUD.",
+            "params": {}
+          },
+          "CompletedTask": {
+            "translated-name": "CompletedTask",
+            "description": "Completed task ID from trigger context. Use case: reward points for finished objective tasks.",
+            "params": {}
+          },
+          "CurrentTask": {
+            "translated-name": "CurrentTask",
+            "description": "Current started task ID. Use case: branch events by task name like patrol or chase.",
+            "params": {}
+          },
+          "EvaluateScorer": {
+            "translated-name": "EvaluateScorer",
+            "description": "Returns scorer value for an agent now. Use case: graph utility output while balancing AI.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "scorerId": {
+                "name": "Scorer ID",
+                "desc": "Utility scorer identifier."
+              }
+            }
+          },
+          "FailedCompoundTask": {
+            "translated-name": "FailedCompoundTask",
+            "description": "Compound task where planning failed. Use case: log broken network branches while testing.",
+            "params": {}
+          },
+          "FailedTask": {
+            "translated-name": "FailedTask",
+            "description": "Failed task ID from trigger context. Use case: retry or switch to a safer fallback action.",
+            "params": {}
+          },
+          "GlobalStateValue": {
+            "translated-name": "GlobalStateValue",
+            "description": "Reads one shared global-state value. Use case: branch logic when global alarm is active.",
+            "params": {
+              "key": {
+                "name": "Key",
+                "desc": "Global state key."
+              }
+            }
+          },
+          "InterruptedTask": {
+            "translated-name": "InterruptedTask",
+            "description": "Task that got interrupted. Use case: stop old animations cleanly before new behavior starts.",
+            "params": {}
+          },
+          "InterruptScore": {
+            "translated-name": "InterruptScore",
+            "description": "Score that caused the last interruption. Use case: tune threshold to avoid over-reacting.",
+            "params": {}
+          },
+          "NewTask": {
+            "translated-name": "NewTask",
+            "description": "New task after interruption. Use case: immediately start VFX for emergency reactions.",
+            "params": {}
+          },
+          "PlanLength": {
+            "translated-name": "PlanLength",
+            "description": "Remaining task count in the plan. Use case: detect when agents are close to idle.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              }
+            }
+          },
+          "PlanTaskAtIndex": {
+            "translated-name": "PlanTaskAtIndex",
+            "description": "Task ID at a plan index. Use case: preview next action for debugging UI.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "index": {
+                "name": "Index",
+                "desc": "Plan index to read."
+              }
+            }
+          },
+          "PreviousTask": {
+            "translated-name": "PreviousTask",
+            "description": "Previous task ID before current one. Use case: detect when behavior transitions happen.",
+            "params": {}
+          },
+          "PreviousTierIndex": {
+            "translated-name": "PreviousTierIndex",
+            "description": "Previous alert tier index. Use case: detect if alert increased or decreased.",
+            "params": {}
+          },
+          "RegisteredAgentType": {
+            "translated-name": "RegisteredAgentType",
+            "description": "Last registered agent type key. Use case: verify setup order in startup events.",
+            "params": {}
+          },
+          "StimulusIntensity": {
+            "translated-name": "StimulusIntensity",
+            "description": "Stimulus intensity value. Use case: scale reaction speed by how strong the event was.",
+            "params": {}
+          },
+          "StimulusType": {
+            "translated-name": "StimulusType",
+            "description": "Stimulus type string from trigger context. Use case: react differently to sound vs visual cues.",
+            "params": {}
+          },
+          "StimulusX": {
+            "translated-name": "StimulusX",
+            "description": "Stimulus X coordinate. Use case: send NPC to investigate that position.",
+            "params": {}
+          },
+          "StimulusY": {
+            "translated-name": "StimulusY",
+            "description": "Stimulus Y coordinate. Use case: mark a noise location on minimap.",
+            "params": {}
+          },
+          "TriggerAgentUID": {
+            "translated-name": "TriggerAgentUID",
+            "description": "Agent UID from the latest trigger. Use case: pick the exact instance to move or animate.",
+            "params": {}
+          },
+          "WorldStateValue": {
+            "translated-name": "WorldStateValue",
+            "description": "Reads one world-state value for an agent. Use case: display health or awareness in UI.",
+            "params": {
+              "agentUID": {
+                "name": "Agent UID",
+                "desc": "Target agent UID."
+              },
+              "key": {
+                "name": "Key",
+                "desc": "World state key."
+              }
+            }
+          },
+          "CountAgents": {
+            "translated-name": "CountAgents",
+            "description": "Current registered agent count. Use case: monitor AI population for performance tuning.",
+            "params": {}
+          },
+          "CountRegisteredNetworks": {
+            "translated-name": "CountRegisteredNetworks",
+            "description": "How many task networks are loaded. Use case: quick startup validation in debug builds.",
+            "params": {}
+          },
+          "CountRegisteredScorers": {
+            "translated-name": "CountRegisteredScorers",
+            "description": "How many utility scorers are loaded. Use case: confirm balance data loaded correctly.",
+            "params": {}
+          },
+          "CountRegisteredTasks": {
+            "translated-name": "CountRegisteredTasks",
+            "description": "Number of primitive tasks for one type. Use case: verify network content during setup.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type string."
+              }
+            }
+          },
+          "GetAgentUIDByIndex": {
+            "translated-name": "GetAgentUIDByIndex",
+            "description": "Gets agent UID by list index. Use case: loop through all managed agents.",
+            "params": {
+              "index": {
+                "name": "Index",
+                "desc": "Zero-based agent index."
+              }
+            }
+          },
+          "GetRegisteredTaskByIndex": {
+            "translated-name": "GetRegisteredTaskByIndex",
+            "description": "Gets primitive task ID by index. Use case: print all registered tasks to a debug panel.",
+            "params": {
+              "agentType": {
+                "name": "Agent Type",
+                "desc": "Agent type string."
+              },
+              "index": {
+                "name": "Index",
+                "desc": "Zero-based task index."
+              }
+            }
           }
         }
       }
